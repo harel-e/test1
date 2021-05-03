@@ -1,0 +1,51 @@
+@startuml
+'!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+
+!include C4_Context.puml
+
+LAYOUT_TOP_DOWN
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram for RZMS
+
+'Enterprise_Boundary(c0, "IANA") {
+'    Person(staff, "IANA Staff", "Manages change requests, domains and users")
+'}
+
+Enterprise_Boundary(c1, "TLD Manager") {
+    Person(tld_manager, "TLD Manager", "Manage the domain")
+    System(tld_app, "Application", "")
+}
+
+Enterprise_Boundary(c2, "IANA") {
+    System_Ext(nsp, "NSP", "Naming Services Portal - SalesForce")
+    Person(staff, "IANA Staff", "Manages change requests, domains and users")
+    System(rzms, "Root Zone Management System", "")
+    System(rt, "Request Tracker", "Out-of-band communication with TLD Manager via email")
+    System(tech_check, "Technical Check Service", "Check the availability and conformity of domain")
+    System(sle_dashboard, "SLE Dashboard", "Public facing system to show various SLE/Metrics")
+    System(email_server, "E-Mail Server", "")
+    System(whois, "Whois Server", "")
+    System(whois_portal, "Whois Portal", "")
+}
+
+System_Ext(zone_maintainer, "Root Zone Maintainer", "")
+
+
+Rel(tld_manager, rzms, "Submit & manage change requests", "Web")
+Rel(tld_app, rzms, "Submit bulk change requests", "OpenAPI")
+Rel(staff, rzms, "Manage requests through workflow")
+
+Rel_R(nsp, rzms, "Domain ready for delegation", "SOAP")
+
+Rel(rzms, rt, "Create ticket for each RZMS change request/Record incoming emails", "REST")
+Rel(rzms, tech_check, "Request technical check of change request", "REST")
+Rel(rzms, sle_dashboard, "Send request details/events", "Kafka/DB")
+Rel(rzms, email_server, "Send notifications to TLD Manager")
+Rel(rzms, email_server, "Receive email from TLD Manager/Root Zone Maintainer")
+Rel(rzms, zone_maintainer, "Send EPP change request for implementation/Status updates", "XML/TCP")
+Rel(rzms, zone_maintainer, "Retrieve zone for comparison", "AXFR")
+Rel(whois, rzms, "Retrieve Whois data", "XML/HTTP")
+Rel(whois_portal, rzms, "Retrieve Whois data", "XML/HTTP")
+
+@enduml

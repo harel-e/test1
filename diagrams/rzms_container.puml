@@ -1,0 +1,79 @@
+@startuml
+'!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+' uncomment the following line and comment the first to use locally
+!include C4_Container.puml
+
+LAYOUT_TOP_DOWN
+'LAYOUT_AS_SKETCH
+LAYOUT_WITH_LEGEND()
+
+title Container diagram for RZMS
+
+Enterprise_Boundary(c2, "TLD Manager") {
+    Person(tld_manager, "TLD Manager", "Manage the domain")
+    Container(tld_manager_spa, "TLD Manager App", "JavaScript, Angular", "")
+    System(tld_api_client, "API Client", "")
+    Rel(tld_manager, tld_manager_spa, "create and view change requests / domains")
+}
+
+Enterprise_Boundary(c3, "IANA") {
+    Person(staff, "IANA Staff", "")
+    Container(staff_spa, "Staff App", "JavaScript, Angular", "")
+    Rel(staff, staff_spa, "Manage change requests, domains and users")
+}
+
+
+System_Boundary(c1, "Root Zone Management System") {
+    Container(staff_gateway, "Web Gateway", "Apache, Java, Spring", "Gateway for all Staff traffic")
+    Container(staff_ui, "Web Application", "NodeJS", "Staff - Delivers the static content / Server Side Rendering")
+    Container(staff_backend, "Web Application", "Java, Spring", "Staff - Delivers dynamic content to browser via REST API")
+    Container(tld_manager_gateway, "Web Gateway", "Apache, Java, Spring", "Gateway for all TLD Manager traffic")
+    Container(tld_manager_ui, "Web Application", "NodeJS", "TLD Manager - Delivers the static content / Server Side Rendering")
+    Container(tld_manager_backend, "Web Application", "Java, Spring", "TLD Manager - Delivers dynamic content to browser via REST API")
+    Container(tld_manager_api, "API Application", "Java, Spring", "TLD Manager API - Provide OpenAPI to submit and manage change requests")
+    Container(auth_service, "API Application", "Java, Spring", "Authentication Service")
+    Container(sfdc_service, "API Application", "Java, Spring", "Token and Domain Management")
+    Container(tld_mgmt, "API Application", "Java, Spring", "Core Backend for domain, change request and user management")
+    ContainerDb(database, "RZMS Schema", "MariaDB RDBMS", "Stores domain, change request and user data")
+    Rel(staff_backend, tld_mgmt, "Uses", "HTTPS")
+    Rel(tld_manager_backend, tld_mgmt, "Uses", "HTTPS")
+    Rel(tld_manager_api, tld_mgmt, "Uses", "HTTPS")
+    Rel(sfdc_service, tld_mgmt, "Uses", "HTTPS")
+    Rel(tld_mgmt, database, "Read / Write", "JDBC")
+    Rel(tld_manager_backend, database, "Read only", "JDBC")
+    Rel(staff_backend, database, "Read only", "JDBC")
+    Rel(tld_manager_api, database, "Read only", "JDBC")
+}
+
+System_Ext(email_server, "E-Mail Server", "")
+System_Ext(nsp, "NSP", "Naming Services Portal - SalesForce")
+System(rt, "Request Tracker", "Out-of-band communication with TLD Manager via email")
+System(tech_check, "Technical Check Service", "Check the availability and conformity of domain")
+System(sle_dashboard, "SLE Dashboard", "Public facing system to show various SLE/Metrics")
+ContainerDb(sle_database, "SLE Schema", "MariaDB RDBMS", "Stores SLE Events")
+System(whois_importer, "Whois Importer", "Import Whois Data")
+System_Ext(zone_maintainer, "Root Zone Maintainer", "")
+
+Rel(nsp, sfdc_service, "Uses")
+Rel(staff_spa, staff_gateway, "static/dynamic content", "HTTPS")
+Rel(staff_gateway, staff_ui, "deliver static content", "HTTPS")
+Rel(staff_gateway, staff_backend, "Uses", "REST/HTTPS")
+
+Rel(tld_mgmt, email_server, "Send/Receive Emails", "POP3S/SMTPS")
+Rel(tld_mgmt, rt, "Create/Close Ticket", "REST/HTTPS")
+Rel(tld_mgmt, tech_check, "Request technical check of change request", "REST/HTTPS")
+Rel(tld_mgmt, zone_maintainer, "Send EPP change request for implementation/Status updates", "XML/TCP")
+Rel(tld_mgmt, zone_maintainer, "Retrieve zone for comparison", "AXFR")
+Rel(tld_mgmt, sle_database, "Write SLE Events", "JDBC")
+Rel(sle_dashboard, sle_database, "Read SLE Events", "JDBC")
+Rel(whois_importer, staff_backend, "Import Whois Data", "REST/HTTPS")
+
+
+Rel(tld_manager_spa, tld_manager_gateway, "static/dynamic content", "HTTPS")
+Rel(tld_manager_gateway, tld_manager_ui, "load static content", "HTTPS")
+Rel(tld_manager_gateway, tld_manager_backend, "Uses", "HTTPS")
+Rel(tld_api_client, tld_manager_gateway, "create and view change requests / domains", "OpenAPI/HTTPS")
+Rel(tld_manager_gateway, tld_manager_api, "Uses", "OpenAPI/HTTPS")
+
+
+@enduml
